@@ -263,7 +263,7 @@ const Canvas: React.FC = () => {
                   height: "100%",
                   resize: "none",
                   padding: "8px",
-                  border: "1px solid #d1d5db",
+                  border: isTextareaEditing ? "2px solid #3b82f6" : "1px solid #d1d5db",
                   borderRadius: "4px",
                   fontSize: component.properties.fontSize || 14,
                   color: component.properties.color || "#000000",
@@ -272,6 +272,7 @@ const Canvas: React.FC = () => {
                   backgroundColor: "white",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                   outline: "none",
+                  cursor: isTextareaEditing ? "text" : "pointer",
                 }}
                 placeholder={component.properties.placeholder}
                 rows={component.properties.rows}
@@ -279,11 +280,16 @@ const Canvas: React.FC = () => {
                 maxLength={component.properties.maxLength}
                 readOnly={!isTextareaEditing}
                 onChange={(e) =>
-                  isTextareaEditing &&
                   handleContentChange(component.id, "value", e.target.value)
                 }
-                onBlur={() => isTextareaEditing && handleEditingComplete()}
+                onBlur={() => handleEditingComplete()}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    handleEditingComplete();
+                  }
+                }}
                 value={component.properties.value || ""}
+                autoFocus={isTextareaEditing}
               />
             )}
           </div>

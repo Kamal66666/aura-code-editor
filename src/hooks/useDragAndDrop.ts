@@ -66,8 +66,21 @@ export const useDragAndDrop = () => {
       ghost.style.fontSize = '12px';
       ghost.style.borderRadius = '4px';
     } else {
+      // For canvas components, make a smaller, consistent ghost
+      ghost.style.width = '100px';
+      ghost.style.height = '80px';
       ghost.style.border = '2px solid #3b82f6';
       ghost.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      ghost.style.display = 'flex';
+      ghost.style.alignItems = 'center';
+      ghost.style.justifyContent = 'center';
+      ghost.style.fontSize = '12px';
+      ghost.style.borderRadius = '4px';
+      ghost.style.color = '#3b82f6';
+      ghost.style.fontWeight = 'bold';
+      
+      // Clear the content and show a simple indicator
+      ghost.innerHTML = '📦 Moving';
     }
     
     document.body.appendChild(ghost);
