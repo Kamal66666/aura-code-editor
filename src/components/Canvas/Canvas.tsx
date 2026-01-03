@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useDragAndDrop } from "../../hooks/useDragAndDrop";
 import {
   selectComponent,
   updateComponent,
 } from "../../store/slices/canvasSlice";
-import { useDragAndDrop } from "../../hooks/useDragAndDrop";
+import ResizeHandles from "../ResizeHandles";
+import HTMLPreview from "../HTMLPreview/HTMLPreview";
 import type { EditorComponent } from "../../types/editor";
 
 const Canvas: React.FC = () => {
@@ -18,6 +20,7 @@ const Canvas: React.FC = () => {
   const [editingComponentId, setEditingComponentId] = useState<string | null>(
     null
   );
+  const [showHTMLPreview, setShowHTMLPreview] = useState(false);
 
   useEffect(() => {
     const cleanup = setupGlobalListeners();
@@ -73,6 +76,69 @@ const Canvas: React.FC = () => {
     setEditingComponentId(null);
   };
 
+  const handleResize = (
+    componentId: string,
+    direction: string,
+    deltaX: number,
+    deltaY: number
+  ) => {
+    const component = components.find((c) => c.id === componentId);
+    if (!component) return;
+
+    let newWidth = component.size.width;
+    let newHeight = component.size.height;
+    let newX = component.position.x;
+    let newY = component.position.y;
+
+    // Calculate new dimensions based on resize direction
+    switch (direction) {
+      case 'n':
+        newHeight = Math.max(20, component.size.height - deltaY);
+        newY = component.position.y + (component.size.height - newHeight);
+        break;
+      case 's':
+        newHeight = Math.max(20, component.size.height + deltaY);
+        break;
+      case 'w':
+        newWidth = Math.max(20, component.size.width - deltaX);
+        newX = component.position.x + (component.size.width - newWidth);
+        break;
+      case 'e':
+        newWidth = Math.max(20, component.size.width + deltaX);
+        break;
+      case 'nw':
+        newWidth = Math.max(20, component.size.width - deltaX);
+        newHeight = Math.max(20, component.size.height - deltaY);
+        newX = component.position.x + (component.size.width - newWidth);
+        newY = component.position.y + (component.size.height - newHeight);
+        break;
+      case 'ne':
+        newWidth = Math.max(20, component.size.width + deltaX);
+        newHeight = Math.max(20, component.size.height - deltaY);
+        newY = component.position.y + (component.size.height - newHeight);
+        break;
+      case 'sw':
+        newWidth = Math.max(20, component.size.width - deltaX);
+        newHeight = Math.max(20, component.size.height + deltaY);
+        newX = component.position.x + (component.size.width - newWidth);
+        break;
+      case 'se':
+        newWidth = Math.max(20, component.size.width + deltaX);
+        newHeight = Math.max(20, component.size.height + deltaY);
+        break;
+    }
+
+    // Update component size and position
+    dispatch(updateComponent({
+      id: componentId,
+      updates: {
+        size: { width: newWidth, height: newHeight },
+        position: { x: newX, y: newY }
+      }
+    }));
+  };
+
+
   const handleComponentMouseDown = (
     e: React.MouseEvent,
     component: EditorComponent
@@ -106,6 +172,19 @@ const Canvas: React.FC = () => {
       ...component.style,
     };
 
+    const componentWrapper = (children: React.ReactNode) => (
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+        {children}
+        {isSelected && !editingComponentId && (
+          <ResizeHandles
+            onResize={(direction, deltaX, deltaY) =>
+              handleResize(component.id, direction, deltaX, deltaY)
+            }
+          />
+        )}
+      </div>
+    );
+
     switch (component.type) {
       case "text":
         const isEditing = editingComponentId === component.id;
@@ -132,34 +211,36 @@ const Canvas: React.FC = () => {
               !isEditing && handleComponentMouseDown(e, component)
             }
           >
-            {isEditing ? (
-              <input
-                type="text"
-                value={component.properties.content}
-                onChange={(e) =>
-                  handleContentChange(component.id, "content", e.target.value)
-                }
-                onBlur={handleEditingComplete}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === "Escape") {
-                    handleEditingComplete();
+            {componentWrapper(
+              isEditing ? (
+                <input
+                  type="text"
+                  value={component.properties.content}
+                  onChange={(e) =>
+                    handleContentChange(component.id, "content", e.target.value)
                   }
-                }}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  width: "100%",
-                  fontSize: "inherit",
-                  fontWeight: "inherit",
-                  color: "inherit",
-                  textAlign: "inherit",
-                  fontFamily: "inherit",
-                }}
-                autoFocus
-              />
-            ) : (
-              component.properties.content
+                  onBlur={handleEditingComplete}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Escape") {
+                      handleEditingComplete();
+                    }
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    width: "100%",
+                    fontSize: "inherit",
+                    fontWeight: "inherit",
+                    color: "inherit",
+                    textAlign: "inherit",
+                    fontFamily: "inherit",
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <span>{component.properties.content}</span>
+              )
             )}
           </div>
         );
@@ -168,83 +249,138 @@ const Canvas: React.FC = () => {
         const isTextareaEditing = editingComponentId === component.id;
 
         return (
-          <textarea
+          <div
             key={component.id}
-            style={{
-              ...componentStyle,
-              resize: component.properties.resize,
-              padding: "8px",
-              border: isSelected ? "2px solid #3b82f6" : "1px solid #d1d5db",
-              borderRadius: "4px",
-              fontSize: component.properties.fontSize || 14,
-              color: component.properties.color || "#000000",
-              textAlign: component.properties.textAlign || "left",
-              fontFamily: "inherit",
-              backgroundColor: "white",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-            placeholder={component.properties.placeholder}
-            rows={component.properties.rows}
-            cols={component.properties.cols}
-            maxLength={component.properties.maxLength}
-            readOnly={!isTextareaEditing}
+            style={componentStyle}
             onClick={(e) => handleComponentClick(component.id, e)}
             onDoubleClick={(e) => handleDoubleClick(component.id, e)}
-            onMouseDown={(e) =>
-              !isTextareaEditing && handleComponentMouseDown(e, component)
-            }
-            onChange={(e) =>
-              isTextareaEditing &&
-              handleContentChange(component.id, "value", e.target.value)
-            }
-            onBlur={() => isTextareaEditing && handleEditingComplete()}
-            value={component.properties.value || ""}
-          />
+            onMouseDown={(e) => !isTextareaEditing && handleComponentMouseDown(e, component)}
+          >
+            {componentWrapper(
+              <textarea
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  resize: "none",
+                  padding: "8px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: component.properties.fontSize || 14,
+                  color: component.properties.color || "#000000",
+                  textAlign: component.properties.textAlign || "left",
+                  fontFamily: "inherit",
+                  backgroundColor: "white",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  outline: "none",
+                }}
+                placeholder={component.properties.placeholder}
+                rows={component.properties.rows}
+                cols={component.properties.cols}
+                maxLength={component.properties.maxLength}
+                readOnly={!isTextareaEditing}
+                onChange={(e) =>
+                  isTextareaEditing &&
+                  handleContentChange(component.id, "value", e.target.value)
+                }
+                onBlur={() => isTextareaEditing && handleEditingComplete()}
+                value={component.properties.value || ""}
+              />
+            )}
+          </div>
         );
 
       case "image":
         return (
-          <img
+          <div
             key={component.id}
-            src={component.properties.src}
-            alt={component.properties.alt}
-            style={{
-              ...componentStyle,
-              objectFit: component.properties.objectFit,
-              borderRadius: component.properties.borderRadius,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              backgroundColor: "#f8f9fa",
-              border: isSelected ? "2px solid #3b82f6" : "1px solid #e9ecef",
-            }}
-            onClick={(e) => handleComponentClick(component.id, e)}
-            onMouseDown={(e) => handleComponentMouseDown(e, component)}
-            draggable={false}
-          />
-        );
-
-      case "button":
-        return (
-          <button
-            key={component.id}
-            style={{
-              ...componentStyle,
-              fontSize: component.properties.fontSize || 16,
-              padding: component.properties.padding || 12,
-              backgroundColor:
-                component.properties.backgroundColor || "#3b82f6",
-              color: component.properties.textColor || "#ffffff",
-              borderRadius: component.properties.borderRadius || 6,
-              border: isSelected ? "2px solid #3b82f6" : "none",
-              fontWeight: "500",
-              transition: "all 0.2s ease",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-            disabled={component.properties.disabled}
+            style={componentStyle}
             onClick={(e) => handleComponentClick(component.id, e)}
             onMouseDown={(e) => handleComponentMouseDown(e, component)}
           >
-            {component.properties.text}
-          </button>
+            {componentWrapper(
+              <img
+                src={component.properties.src}
+                alt={component.properties.alt}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: component.properties.objectFit,
+                  borderRadius: component.properties.borderRadius,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  backgroundColor: "#f8f9fa",
+                  border: "1px solid #e9ecef",
+                }}
+                draggable={false}
+              />
+            )}
+          </div>
+        );
+
+      case "button":
+        const isButtonEditing = editingComponentId === component.id;
+        
+        return (
+          <div
+            key={component.id}
+            style={{
+              ...componentStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => handleComponentClick(component.id, e)}
+            onDoubleClick={(e) => handleDoubleClick(component.id, e)}
+            onMouseDown={(e) => !isButtonEditing && handleComponentMouseDown(e, component)}
+          >
+            {componentWrapper(
+              isButtonEditing ? (
+                <input
+                  type="text"
+                  value={component.properties.text}
+                  onChange={(e) =>
+                    handleContentChange(component.id, "text", e.target.value)
+                  }
+                  onBlur={handleEditingComplete}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === "Escape") {
+                      handleEditingComplete();
+                    }
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    width: "100%",
+                    textAlign: "center",
+                    fontSize: component.properties.fontSize || 16,
+                    color: component.properties.textColor || "#ffffff",
+                    fontWeight: "500",
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    fontSize: component.properties.fontSize || 16,
+                    padding: component.properties.padding || 12,
+                    backgroundColor: component.properties.backgroundColor || "#3b82f6",
+                    color: component.properties.textColor || "#ffffff",
+                    borderRadius: component.properties.borderRadius || 6,
+                    border: "none",
+                    fontWeight: "500",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    cursor: "pointer",
+                  }}
+                  disabled={component.properties.disabled}
+                >
+                  {component.properties.text}
+                </button>
+              )
+            )}
+          </div>
         );
 
       default:
@@ -273,6 +409,12 @@ const Canvas: React.FC = () => {
 
         {!isMobile && (
           <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              onClick={() => setShowHTMLPreview(true)}
+            >
+              Preview HTML
+            </button>
             <button
               className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
               onClick={() => {
@@ -317,6 +459,12 @@ const Canvas: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* HTML Preview Modal */}
+      <HTMLPreview
+        isOpen={showHTMLPreview}
+        onClose={() => setShowHTMLPreview(false)}
+      />
     </div>
   );
 };
