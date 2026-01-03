@@ -2,6 +2,11 @@ import React from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { updateComponent } from '../../store/slices/canvasSlice';
+import NumberSlider from '../Controls/NumberSlider';
+import ColorPicker from '../Controls/ColorPicker';
+import Dropdown from '../Controls/Dropdown';
+import ButtonGroup from '../Controls/ButtonGroup';
+import TextInput from '../Controls/TextInput';
 import type { EditorComponent } from '../../types/editor';
 
 const PropertiesPanel: React.FC = () => {
@@ -58,59 +63,44 @@ const PropertiesPanel: React.FC = () => {
     
     return (
       <div className="space-y-4">
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Content
-          </label>
-          <textarea
-            value={component.properties.content}
-            onChange={(e) => handlePropertyChange('content', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-            rows={3}
-          />
-        </div>
+        <TextInput
+          label="Content"
+          value={component.properties.content}
+          onChange={(value) => handlePropertyChange('content', value)}
+          multiline
+          rows={3}
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Font Size
-          </label>
-          <input
-            type="number"
-            value={component.properties.fontSize}
-            onChange={(e) => handlePropertyChange('fontSize', parseInt(e.target.value))}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-            min="8"
-            max="72"
-          />
-        </div>
+        <NumberSlider
+          label="Font Size"
+          value={component.properties.fontSize}
+          onChange={(value) => handlePropertyChange('fontSize', value)}
+          min={8}
+          max={72}
+          unit="px"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Color
-          </label>
-          <input
-            type="color"
-            value={component.properties.color}
-            onChange={(e) => handlePropertyChange('color', e.target.value)}
-            className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-          />
-        </div>
+        <ColorPicker
+          label="Color"
+          value={component.properties.color}
+          onChange={(value) => handlePropertyChange('color', value)}
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Text Align
-          </label>
-          <select
-            value={component.properties.textAlign}
-            onChange={(e) => handlePropertyChange('textAlign', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-            <option value="justify">Justify</option>
-          </select>
-        </div>
+        <Dropdown
+          label="Font Weight"
+          value={component.properties.fontWeight || 'normal'}
+          onChange={(value) => handlePropertyChange('fontWeight', value)}
+          options={[
+            { value: 'normal', label: 'Normal' },
+            { value: 'bold', label: 'Bold' },
+            { value: '100', label: 'Thin' },
+            { value: '300', label: 'Light' },
+            { value: '500', label: 'Medium' },
+            { value: '600', label: 'Semi Bold' },
+            { value: '700', label: 'Bold' },
+            { value: '900', label: 'Black' },
+          ]}
+        />
       </div>
     );
   };
@@ -120,61 +110,58 @@ const PropertiesPanel: React.FC = () => {
     
     return (
       <div className="space-y-4">
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Button Text
-          </label>
-          <input
-            type="text"
-            value={component.properties.text}
-            onChange={(e) => handlePropertyChange('text', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          />
-        </div>
+        <TextInput
+          label="Button Text"
+          value={component.properties.text}
+          onChange={(value) => handlePropertyChange('text', value)}
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Variant
-          </label>
-          <select
-            value={component.properties.variant}
-            onChange={(e) => handlePropertyChange('variant', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <option value="primary">Primary</option>
-            <option value="secondary">Secondary</option>
-            <option value="outline">Outline</option>
-            <option value="ghost">Ghost</option>
-          </select>
-        </div>
+        <TextInput
+          label="URL"
+          value={component.properties.url || ''}
+          onChange={(value) => handlePropertyChange('url', value)}
+          type="url"
+          placeholder="https://example.com"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Size
-          </label>
-          <select
-            value={component.properties.size}
-            onChange={(e) => handlePropertyChange('size', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <option value="sm">Small</option>
-            <option value="md">Medium</option>
-            <option value="lg">Large</option>
-          </select>
-        </div>
+        <NumberSlider
+          label="Font Size"
+          value={component.properties.fontSize || 16}
+          onChange={(value) => handlePropertyChange('fontSize', value)}
+          min={8}
+          max={32}
+          unit="px"
+        />
         
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="disabled"
-            checked={component.properties.disabled}
-            onChange={(e) => handlePropertyChange('disabled', e.target.checked)}
-            className="mr-2"
-          />
-          <label htmlFor="disabled" className={`text-gray-700 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Disabled
-          </label>
-        </div>
+        <NumberSlider
+          label="Padding"
+          value={component.properties.padding || 12}
+          onChange={(value) => handlePropertyChange('padding', value)}
+          min={0}
+          max={50}
+          unit="px"
+        />
+        
+        <ColorPicker
+          label="Background Color"
+          value={component.properties.backgroundColor || '#3b82f6'}
+          onChange={(value) => handlePropertyChange('backgroundColor', value)}
+        />
+        
+        <ColorPicker
+          label="Text Color"
+          value={component.properties.textColor || '#ffffff'}
+          onChange={(value) => handlePropertyChange('textColor', value)}
+        />
+        
+        <NumberSlider
+          label="Border Radius"
+          value={component.properties.borderRadius || 6}
+          onChange={(value) => handlePropertyChange('borderRadius', value)}
+          min={0}
+          max={50}
+          unit="px"
+        />
       </div>
     );
   };
@@ -184,61 +171,60 @@ const PropertiesPanel: React.FC = () => {
     
     return (
       <div className="space-y-4">
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Image URL
-          </label>
-          <input
-            type="url"
-            value={component.properties.src}
-            onChange={(e) => handlePropertyChange('src', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-            placeholder="https://example.com/image.jpg"
-          />
-        </div>
+        <TextInput
+          label="Image URL"
+          value={component.properties.src}
+          onChange={(value) => handlePropertyChange('src', value)}
+          type="url"
+          placeholder="https://example.com/image.jpg"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Alt Text
-          </label>
-          <input
-            type="text"
-            value={component.properties.alt}
-            onChange={(e) => handlePropertyChange('alt', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          />
-        </div>
+        <TextInput
+          label="Alt Text"
+          value={component.properties.alt}
+          onChange={(value) => handlePropertyChange('alt', value)}
+          placeholder="Describe the image"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Object Fit
-          </label>
-          <select
-            value={component.properties.objectFit}
-            onChange={(e) => handlePropertyChange('objectFit', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <option value="contain">Contain</option>
-            <option value="cover">Cover</option>
-            <option value="fill">Fill</option>
-            <option value="none">None</option>
-            <option value="scale-down">Scale Down</option>
-          </select>
-        </div>
+        <Dropdown
+          label="Object Fit"
+          value={component.properties.objectFit}
+          onChange={(value) => handlePropertyChange('objectFit', value)}
+          options={[
+            { value: 'contain', label: 'Contain' },
+            { value: 'cover', label: 'Cover' },
+            { value: 'fill', label: 'Fill' },
+            { value: 'none', label: 'None' },
+            { value: 'scale-down', label: 'Scale Down' },
+          ]}
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Border Radius
-          </label>
-          <input
-            type="number"
-            value={component.properties.borderRadius}
-            onChange={(e) => handlePropertyChange('borderRadius', parseInt(e.target.value))}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-            min="0"
-            max="50"
-          />
-        </div>
+        <NumberSlider
+          label="Border Radius"
+          value={component.properties.borderRadius}
+          onChange={(value) => handlePropertyChange('borderRadius', value)}
+          min={0}
+          max={50}
+          unit="px"
+        />
+        
+        <NumberSlider
+          label="Height"
+          value={component.size.height}
+          onChange={(value) => handleSizeChange('height', value)}
+          min={50}
+          max={800}
+          unit="px"
+        />
+        
+        <NumberSlider
+          label="Width"
+          value={component.size.width}
+          onChange={(value) => handleSizeChange('width', value)}
+          min={50}
+          max={800}
+          unit="px"
+        />
       </div>
     );
   };
@@ -248,132 +234,125 @@ const PropertiesPanel: React.FC = () => {
     
     return (
       <div className="space-y-4">
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Placeholder
-          </label>
-          <input
-            type="text"
-            value={component.properties.placeholder}
-            onChange={(e) => handlePropertyChange('placeholder', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          />
-        </div>
+        <TextInput
+          label="Placeholder"
+          value={component.properties.placeholder}
+          onChange={(value) => handlePropertyChange('placeholder', value)}
+          placeholder="Enter placeholder text"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Rows
-          </label>
-          <input
-            type="number"
-            value={component.properties.rows}
-            onChange={(e) => handlePropertyChange('rows', parseInt(e.target.value))}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-            min="1"
-            max="20"
-          />
-        </div>
+        <NumberSlider
+          label="Font Size"
+          value={component.properties.fontSize || 14}
+          onChange={(value) => handlePropertyChange('fontSize', value)}
+          min={8}
+          max={32}
+          unit="px"
+        />
         
-        <div>
-          <label className={`block text-gray-700 font-medium mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Resize
-          </label>
-          <select
-            value={component.properties.resize}
-            onChange={(e) => handlePropertyChange('resize', e.target.value)}
-            className={`w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isMobile ? 'text-xs' : 'text-sm'}`}
-          >
-            <option value="none">None</option>
-            <option value="both">Both</option>
-            <option value="horizontal">Horizontal</option>
-            <option value="vertical">Vertical</option>
-          </select>
-        </div>
+        <ColorPicker
+          label="Text Color"
+          value={component.properties.color || '#000000'}
+          onChange={(value) => handlePropertyChange('color', value)}
+        />
+        
+        <ButtonGroup
+          label="Text Align"
+          value={component.properties.textAlign || 'left'}
+          onChange={(value) => handlePropertyChange('textAlign', value)}
+          options={[
+            { value: 'left', label: 'Left', icon: '⬅️' },
+            { value: 'center', label: 'Center', icon: '↔️' },
+            { value: 'right', label: 'Right', icon: '➡️' },
+          ]}
+        />
+        
+        <NumberSlider
+          label="Rows"
+          value={component.properties.rows}
+          onChange={(value) => handlePropertyChange('rows', value)}
+          min={1}
+          max={20}
+        />
       </div>
     );
   };
 
+  if (!selectedComponent) {
+    return (
+      <div className={`bg-white border-l border-gray-200 ${`w-full`} p-4`}>
+        <h2 className="text-lg font-semibold mb-4">Properties</h2>
+        <div className="text-center py-8">
+          <div className="text-4xl mb-2">🎯</div>
+          <p className="text-gray-500">No selection</p>
+          <p className="text-sm text-gray-400 mt-1">Select a component to edit its properties</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`h-full flex flex-col ${isMobile ? 'p-2' : 'p-4'}`}>
-      <div className="mb-4">
-        <h2 className={`font-semibold text-gray-800 ${isMobile ? 'text-sm' : 'text-lg'}`}>
-          Properties
-        </h2>
-        <p className={`text-gray-600 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-          {selectedComponent ? 'Edit component' : 'Select a component'}
+    <div className={`bg-white border-l border-gray-200 ${isMobile ? 'w-full' : 'w-80'} h-full flex flex-col`}>
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-800">Properties</h2>
+        <p className="text-sm text-gray-600">
+          {selectedComponent?.type.charAt(0).toUpperCase() + selectedComponent?.type.slice(1)} Settings
         </p>
       </div>
 
-      {selectedComponent ? (
-        <div className="flex-1 overflow-y-auto space-y-6">
-          {/* Position & Size */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className={`font-medium text-gray-800 mb-3 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-              Position & Size
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={`block text-gray-600 mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>X</label>
-                <input
-                  type="number"
-                  value={Math.round(selectedComponent.position.x)}
-                  onChange={(e) => handlePositionChange('x', parseInt(e.target.value) || 0)}
-                  className={`w-full border border-gray-300 rounded px-2 py-1 ${isMobile ? 'text-xs' : 'text-sm'}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-gray-600 mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Y</label>
-                <input
-                  type="number"
-                  value={Math.round(selectedComponent.position.y)}
-                  onChange={(e) => handlePositionChange('y', parseInt(e.target.value) || 0)}
-                  className={`w-full border border-gray-300 rounded px-2 py-1 ${isMobile ? 'text-xs' : 'text-sm'}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-gray-600 mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Width</label>
-                <input
-                  type="number"
-                  value={selectedComponent.size.width}
-                  onChange={(e) => handleSizeChange('width', parseInt(e.target.value) || 0)}
-                  className={`w-full border border-gray-300 rounded px-2 py-1 ${isMobile ? 'text-xs' : 'text-sm'}`}
-                />
-              </div>
-              <div>
-                <label className={`block text-gray-600 mb-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>Height</label>
-                <input
-                  type="number"
-                  value={selectedComponent.size.height}
-                  onChange={(e) => handleSizeChange('height', parseInt(e.target.value) || 0)}
-                  className={`w-full border border-gray-300 rounded px-2 py-1 ${isMobile ? 'text-xs' : 'text-sm'}`}
-                />
-              </div>
-            </div>
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-6">
+        {/* Position & Size */}
+        <div className="space-y-4">
+          <h3 className="font-medium text-gray-800 text-sm">Position & Size</h3>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <NumberSlider
+              label="X Position"
+              value={Math.round(selectedComponent.position.x)}
+              onChange={(value) => handlePositionChange('x', value)}
+              min={0}
+              max={1000}
+              unit="px"
+            />
+            <NumberSlider
+              label="Y Position"
+              value={Math.round(selectedComponent.position.y)}
+              onChange={(value) => handlePositionChange('y', value)}
+              min={0}
+              max={1000}
+              unit="px"
+            />
+            <NumberSlider
+              label="Width"
+              value={selectedComponent.size.width}
+              onChange={(value) => handleSizeChange('width', value)}
+              min={50}
+              max={800}
+              unit="px"
+            />
+            <NumberSlider
+              label="Height"
+              value={selectedComponent.size.height}
+              onChange={(value) => handleSizeChange('height', value)}
+              min={20}
+              max={600}
+              unit="px"
+            />
           </div>
+        </div>
 
-          {/* Component-specific properties */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className={`font-medium text-gray-800 mb-3 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-              {selectedComponent.type.charAt(0).toUpperCase() + selectedComponent.type.slice(1)} Properties
-            </h3>
-            
-            {renderTextProperties(selectedComponent)}
-            {renderButtonProperties(selectedComponent)}
-            {renderImageProperties(selectedComponent)}
-            {renderTextAreaProperties(selectedComponent)}
-          </div>
+        {/* Component-specific properties */}
+        <div className="space-y-4">
+          <h3 className="font-medium text-gray-800 text-sm">
+            {selectedComponent.type.charAt(0).toUpperCase() + selectedComponent.type.slice(1)} Properties
+          </h3>
+          
+          {renderTextProperties(selectedComponent)}
+          {renderButtonProperties(selectedComponent)}
+          {renderImageProperties(selectedComponent)}
+          {renderTextAreaProperties(selectedComponent)}
         </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <div className={`${isMobile ? 'text-3xl' : 'text-5xl'} mb-3`}>⚙️</div>
-            <div className={`${isMobile ? 'text-xs' : 'text-sm'}`}>
-              Select a component to edit its properties
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

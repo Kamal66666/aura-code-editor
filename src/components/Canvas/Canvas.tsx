@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
-import { addComponent, selectComponent } from '../../store/slices/canvasSlice';
-import type { PaletteItem, EditorComponent } from '../../types/editor';
+import { selectComponent, updateComponent } from '../../store/slices/canvasSlice';
+import { useDragAndDrop } from '../../hooks/useDragAndDrop';
+import type { EditorComponent } from '../../types/editor';
 
 const Canvas: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -10,35 +11,13 @@ const Canvas: React.FC = () => {
     (state) => state.canvas
   );
   const { isMobile } = useAppSelector((state) => state.ui);
+  const { startCanvasDrag, setupGlobalListeners } = useDragAndDrop();
+  const [editingComponentId, setEditingComponentId] = useState<string | null>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    
-    try {
-      const paletteItem: PaletteItem = JSON.parse(
-        e.dataTransfer.getData('application/json')
-      );
-      
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / zoom;
-      const y = (e.clientY - rect.top) / zoom;
-      
-      const newComponent: EditorComponent = {
-        ...paletteItem.defaultProps,
-        id: `${paletteItem.type}-${Date.now()}`,
-        position: { x, y },
-      } as EditorComponent;
-      
-      dispatch(addComponent(newComponent));
-    } catch (error) {
-      console.error('Failed to parse dropped item:', error);
-    }
-  };
+  useEffect(() => {
+    const cleanup = setupGlobalListeners();
+    return cleanup;
+  }, [setupGlobalListeners]);
 
   const getCanvasStyle = (): React.CSSProperties => ({
     width: '100%',
@@ -57,8 +36,45 @@ const Canvas: React.FC = () => {
     overflow: 'hidden',
   });
 
-  const handleComponentClick = (componentId: string) => {
+  const handleComponentClick = (componentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     dispatch(selectComponent(componentId));
+  };
+
+  const handleDoubleClick = (componentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingComponentId(componentId);
+  };
+
+  const handleContentChange = (componentId: string, property: string, value: any) => {
+    dispatch(updateComponent({
+      id: componentId,
+      updates: {
+        properties: {
+          ...components.find(c => c.id === componentId)?.properties,
+          [property]: value,
+        },
+      } as Partial<EditorComponent>,
+    }));
+  };
+
+  const handleEditingComplete = () => {
+    setEditingComponentId(null);
+  };
+
+  const handleComponentMouseDown = (e: React.MouseEvent, component: EditorComponent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Select the component first
+    dispatch(selectComponent(component.id));
+    
+    // Start drag operation
+    startCanvasDrag(e, component);
+  };
+
+  const handleCanvasClick = () => {
+    dispatch(selectComponent(null));
   };
 
   const renderComponent = (component: EditorComponent) => {
@@ -78,6 +94,8 @@ const Canvas: React.FC = () => {
 
     switch (component.type) {
       case 'text':
+        const isEditing = editingComponentId === component.id;
+        
         return (
           <div
             key={component.id}
@@ -94,13 +112,43 @@ const Canvas: React.FC = () => {
               backgroundColor: 'white',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             }}
-            onClick={() => handleComponentClick(component.id)}
+            onClick={(e) => handleComponentClick(component.id, e)}
+            onDoubleClick={(e) => handleDoubleClick(component.id, e)}
+            onMouseDown={(e) => !isEditing && handleComponentMouseDown(e, component)}
           >
-            {component.properties.content}
+            {isEditing ? (
+              <input
+                type="text"
+                value={component.properties.content}
+                onChange={(e) => handleContentChange(component.id, 'content', e.target.value)}
+                onBlur={handleEditingComplete}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') {
+                    handleEditingComplete();
+                  }
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  width: '100%',
+                  fontSize: 'inherit',
+                  fontWeight: 'inherit',
+                  color: 'inherit',
+                  textAlign: 'inherit',
+                  fontFamily: 'inherit',
+                }}
+                autoFocus
+              />
+            ) : (
+              component.properties.content
+            )}
           </div>
         );
         
       case 'textarea':
+        const isTextareaEditing = editingComponentId === component.id;
+        
         return (
           <textarea
             key={component.id}
@@ -110,15 +158,24 @@ const Canvas: React.FC = () => {
               padding: '8px',
               border: isSelected ? '2px solid #3b82f6' : '1px solid #d1d5db',
               borderRadius: '4px',
-              fontSize: '14px',
+              fontSize: component.properties.fontSize || 14,
+              color: component.properties.color || '#000000',
+              textAlign: component.properties.textAlign || 'left',
               fontFamily: 'inherit',
+              backgroundColor: 'white',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             }}
             placeholder={component.properties.placeholder}
             rows={component.properties.rows}
             cols={component.properties.cols}
             maxLength={component.properties.maxLength}
-            readOnly
-            onClick={() => handleComponentClick(component.id)}
+            readOnly={!isTextareaEditing}
+            onClick={(e) => handleComponentClick(component.id, e)}
+            onDoubleClick={(e) => handleDoubleClick(component.id, e)}
+            onMouseDown={(e) => !isTextareaEditing && handleComponentMouseDown(e, component)}
+            onChange={(e) => isTextareaEditing && handleContentChange(component.id, 'value', e.target.value)}
+            onBlur={() => isTextareaEditing && handleEditingComplete()}
+            value={component.properties.value || ''}
           />
         );
         
@@ -133,37 +190,34 @@ const Canvas: React.FC = () => {
               objectFit: component.properties.objectFit,
               borderRadius: component.properties.borderRadius,
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              backgroundColor: '#f8f9fa',
+              border: isSelected ? '2px solid #3b82f6' : '1px solid #e9ecef',
             }}
-            onClick={() => handleComponentClick(component.id)}
+            onClick={(e) => handleComponentClick(component.id, e)}
+            onMouseDown={(e) => handleComponentMouseDown(e, component)}
+            draggable={false}
           />
         );
         
       case 'button':
-        const buttonVariants = {
-          primary: 'bg-blue-600 text-white hover:bg-blue-700',
-          secondary: 'bg-gray-600 text-white hover:bg-gray-700',
-          outline: 'bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
-          ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
-        };
-        
-        const buttonSizes = {
-          sm: 'px-3 py-1 text-sm',
-          md: 'px-4 py-2 text-base',
-          lg: 'px-6 py-3 text-lg',
-        };
-        
         return (
           <button
             key={component.id}
-            style={componentStyle}
-            className={`
-              ${buttonVariants[component.properties.variant]}
-              ${buttonSizes[component.properties.size]}
-              rounded font-medium transition-colors duration-200
-              ${component.properties.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
+            style={{
+              ...componentStyle,
+              fontSize: component.properties.fontSize || 16,
+              padding: component.properties.padding || 12,
+              backgroundColor: component.properties.backgroundColor || '#3b82f6',
+              color: component.properties.textColor || '#ffffff',
+              borderRadius: component.properties.borderRadius || 6,
+              border: isSelected ? '2px solid #3b82f6' : 'none',
+              fontWeight: '500',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            }}
             disabled={component.properties.disabled}
-            onClick={() => handleComponentClick(component.id)}
+            onClick={(e) => handleComponentClick(component.id, e)}
+            onMouseDown={(e) => handleComponentMouseDown(e, component)}
           >
             {component.properties.text}
           </button>
@@ -205,8 +259,8 @@ const Canvas: React.FC = () => {
       <div className="flex-1 overflow-auto">
         <div
           style={getCanvasStyle()}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
+          onClick={handleCanvasClick}
+          data-canvas="true"
           className="min-h-full"
         >
           {components.map(renderComponent)}

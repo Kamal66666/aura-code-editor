@@ -1,82 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useDragAndDrop } from '../../hooks/useDragAndDrop';
+import { paletteComponents } from '../../data/paletteComponents';
 import type { PaletteItem } from '../../types/editor';
-
-const paletteItems: PaletteItem[] = [
-  {
-    type: 'text',
-    label: 'Text',
-    icon: '📝',
-    defaultProps: {
-      type: 'text',
-      position: { x: 0, y: 0 },
-      size: { width: 200, height: 40 },
-      properties: {
-        content: 'Sample Text',
-        fontSize: 16,
-        fontWeight: 'normal',
-        color: '#000000',
-        textAlign: 'left',
-        fontFamily: 'Arial, sans-serif',
-      },
-    },
-  },
-  {
-    type: 'textarea',
-    label: 'Text Area',
-    icon: '📄',
-    defaultProps: {
-      type: 'textarea',
-      position: { x: 0, y: 0 },
-      size: { width: 300, height: 120 },
-      properties: {
-        placeholder: 'Enter text here...',
-        rows: 4,
-        cols: 30,
-        resize: 'both',
-      },
-    },
-  },
-  {
-    type: 'image',
-    label: 'Image',
-    icon: '🖼️',
-    defaultProps: {
-      type: 'image',
-      position: { x: 0, y: 0 },
-      size: { width: 200, height: 150 },
-      properties: {
-        src: 'https://via.placeholder.com/200x150',
-        alt: 'Placeholder image',
-        objectFit: 'cover',
-        borderRadius: 0,
-      },
-    },
-  },
-  {
-    type: 'button',
-    label: 'Button',
-    icon: '🔘',
-    defaultProps: {
-      type: 'button',
-      position: { x: 0, y: 0 },
-      size: { width: 120, height: 40 },
-      properties: {
-        text: 'Click me',
-        variant: 'primary',
-        size: 'md',
-        disabled: false,
-      },
-    },
-  },
-];
 
 const Palette: React.FC = () => {
   const { isMobile } = useAppSelector((state) => state.ui);
+  const { startPaletteDrag, setupGlobalListeners } = useDragAndDrop();
 
-  const handleDragStart = (e: React.DragEvent, item: PaletteItem) => {
-    e.dataTransfer.setData('application/json', JSON.stringify(item));
-    e.dataTransfer.effectAllowed = 'copy';
+  useEffect(() => {
+    const cleanup = setupGlobalListeners();
+    return cleanup;
+  }, [setupGlobalListeners]);
+
+  const handleMouseDown = (e: React.MouseEvent, item: PaletteItem) => {
+    startPaletteDrag(e, item);
   };
 
   return (
@@ -90,41 +28,69 @@ const Palette: React.FC = () => {
         </p>
       </div>
       
-      <div className={`grid gap-2 ${isMobile ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        {paletteItems.map((item) => (
+      <div className={`grid gap-3 ${isMobile ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {paletteComponents.map((item) => (
           <div
             key={item.type}
-            draggable
-            onDragStart={(e) => handleDragStart(e, item)}
+            onMouseDown={(e) => handleMouseDown(e, item)}
             className={`
-              bg-white border-2 border-gray-200 rounded-lg cursor-grab active:cursor-grabbing
-              hover:border-blue-300 hover:shadow-md transition-all duration-200
-              ${isMobile ? 'p-2' : 'p-3'}
+              group relative bg-white border-2 border-gray-200 rounded-xl cursor-grab active:cursor-grabbing
+              hover:border-blue-400 hover:shadow-lg hover:shadow-blue-100 hover:-translate-y-1
+              transition-all duration-300 ease-out transform
+              ${isMobile ? 'p-3' : 'p-4'}
             `}
           >
-            <div className="flex items-center gap-2">
-              <span className={`${isMobile ? 'text-lg' : 'text-2xl'}`}>
-                {item.icon}
-              </span>
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="relative flex items-center gap-3">
+              {/* Icon with animated background */}
+              <div className={`
+                flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-blue-100
+                transition-colors duration-300
+                ${isMobile ? 'w-8 h-8' : 'w-12 h-12'}
+              `}>
+                <span className={`${isMobile ? 'text-lg' : 'text-2xl'} group-hover:scale-110 transition-transform duration-300`}>
+                  {item.icon}
+                </span>
+              </div>
+              
               <div className="flex-1">
-                <div className={`font-medium text-gray-800 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <div className={`font-semibold text-gray-800 group-hover:text-blue-700 transition-colors duration-300 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                   {item.label}
                 </div>
                 {!isMobile && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 group-hover:text-blue-500 transition-colors duration-300 capitalize">
                     {item.type}
                   </div>
                 )}
               </div>
+              
+              {/* Drag indicator */}
+              <div className={`
+                flex flex-col gap-1 opacity-30 group-hover:opacity-60 transition-opacity duration-300
+                ${isMobile ? 'scale-75' : ''}
+              `}>
+                <div className="w-1 h-1 bg-gray-400 rounded-full" />
+                <div className="w-1 h-1 bg-gray-400 rounded-full" />
+                <div className="w-1 h-1 bg-gray-400 rounded-full" />
+              </div>
             </div>
+            
+            {/* Subtle shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 group-hover:animate-pulse rounded-xl" />
           </div>
         ))}
       </div>
       
       {!isMobile && (
         <div className="mt-auto pt-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500">
-            💡 Tip: Drag components to the canvas to add them
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="text-blue-500">💡</span>
+            <span>Click and drag components to the canvas</span>
+          </div>
+          <div className="mt-2 text-xs text-gray-400">
+            Native drag & drop • No external libraries
           </div>
         </div>
       )}

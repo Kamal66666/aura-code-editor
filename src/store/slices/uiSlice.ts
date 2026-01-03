@@ -4,7 +4,7 @@ import type { UIState } from '../../types/editor';
 
 const initialState: UIState = {
   leftPanelWidth: 20, // percentage
-  rightPanelWidth: 20, // percentage
+  rightPanelWidth: 30, // percentage
   showGrid: true,
   showRulers: false,
   isMobile: false,

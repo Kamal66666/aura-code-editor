@@ -38,6 +38,10 @@ export interface TextAreaComponentProps extends BaseComponentProps {
     cols: number;
     maxLength?: number;
     resize: 'none' | 'both' | 'horizontal' | 'vertical';
+    fontSize?: number;
+    color?: string;
+    textAlign?: 'left' | 'center' | 'right' | 'justify';
+    value?: string;
   };
 }
 
@@ -59,6 +63,12 @@ export interface ButtonComponentProps extends BaseComponentProps {
     size: 'sm' | 'md' | 'lg';
     disabled: boolean;
     onClick?: string; // JavaScript code as string
+    url?: string;
+    fontSize?: number;
+    padding?: number;
+    backgroundColor?: string;
+    textColor?: string;
+    borderRadius?: number;
   };
 }
 
